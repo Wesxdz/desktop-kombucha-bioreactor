@@ -3,12 +3,14 @@ $fs = 0.4;
 $fn=200;
 
 use <utils.scad>
+use <funnel_box.scad>
 
-coneHeight = 100;
-coneDiameter = 100;
+coneHeight = 75;
+coneDiameter = 150;
 coneHoleDiam = 25;
 
-rotate_extrude() polygon([[coneHoleDiam / 2, 0], [coneDiameter, 0], [coneDiameter, coneHeight]]);
+boxCircle = false;
+funnelCircle = false;
 
 pipeDiameter = 25;
 pipeWall = 3;
@@ -19,27 +21,33 @@ miniPipeTrans = [0, 0, -pipeDiameter / 4];
 
 difference()
 {
-	translate(miniPipeTrans) 
+	union()
 	{
-		pipe(coneHoleDiam, pipeWall, coneHoleDiam / 2);
+		funnelBoxOutside(coneHeight,
+		coneDiameter,
+		coneHoleDiam,
+		pipeWall,
+		coneHoleDiam/2+pipeWall,
+		boxCircle,
+		funnelCircle);
+		
+		translate(pipeTrans) rotate([90])
+		{
+			pipeOutside(pipeDiameter, pipeWall, pipeLen);
+		}
 	}
+	
+	funnelBoxInside(coneHeight,
+		coneDiameter,
+		coneHoleDiam,
+		pipeWall,
+		coneHoleDiam/2+pipeWall,
+		boxCircle,
+		funnelCircle);
 	
 	translate(pipeTrans) rotate([90]) 
 	{
 		pipeInside(pipeDiameter, pipeWall, pipeLen);
-	}
-}
-
-difference()
-{
-	translate(pipeTrans) rotate([90])
-	{
-		pipe(pipeDiameter, pipeWall, pipeLen);
-	}
-	
-	translate(miniPipeTrans)
-	{
-		pipeInside(coneHoleDiam, pipeWall, coneHoleDiam / 2);
 	}
 }
 
