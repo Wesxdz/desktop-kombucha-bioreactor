@@ -1,39 +1,79 @@
-$fa = 1;
-$fs = 0.4;
-$fn=200;
+height=100;
+diameter=200;
+hole=25;
+wall=3;
+tunnelHeight=20;
+containerCircle=false;
+tunnelCircle=false;
 
-use <utils.scad>
-
-coneHeight = 100;
-coneDiameter = 100;
-coneHoleDiam = 25;
-
-
-module funnelBox(height=100, diameter=200, hole=25, wall=3)
+module funnelBox(height=100, diameter=200, hole=25, wall=3, tunnelHeight=20,
+				 containerCircle=false, tunnelCircle=false)
 {
+	holeWall = hole + wall*2;
+	diameterWall = diameter + wall*2;
 	
 	difference()
 	{
 		union()
 		{
-			rotate_extrude() 
+			linear_extrude(height, scale=diameterWall/holeWall)
 			{
-				points = 
-				[
-					[hole/2, 0], 
-					[hole/2 + wall, 0],
-					[diameter/2 + wall, height],
-					[diameter/2, height],
-				];
-				
-				polygon(points);
-				
+				if(containerCircle)
+				{
+					circle(d=holeWall);
+				}
+				else
+				{
+					square(holeWall,center=true);
+				}
 			}
-			translate([0, 0, -hole/3]) cube([hole+wall*2, hole+wall*2, hole], center=true);
+			
+			translate([0,0,-tunnelHeight])linear_extrude(height) 
+			{	
+				if(tunnelCircle)
+				{
+					circle(d=holeWall);
+				}
+				else
+				{
+					square(holeWall,center=true);
+				}
+			}
 		}
-		
-		translate([0, 0, -hole/2])  cube([hole, hole, hole+10000], center=true);
+
+		union()
+		{
+			linear_extrude(height+0.01, scale=diameter/hole)
+			{
+				if(containerCircle)
+				{
+					circle(d=hole);
+				}
+				else
+				{
+					square(hole,center=true);
+				}
+			}
+			
+			translate([0,0,-tunnelHeight-0.01])linear_extrude(height) 
+			{	
+				if(tunnelCircle)
+				{
+					circle(d=hole);
+				}
+				else
+				{
+					square(hole,center=true);
+				}
+			}
+		}
 	}
 }
 
-funnelBox();
+funnelBox(height,
+diameter,
+hole,
+wall,
+tunnelHeight,
+containerCircle,
+tunnelCircle);
