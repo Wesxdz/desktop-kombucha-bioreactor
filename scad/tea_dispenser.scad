@@ -13,9 +13,9 @@ coneHoleDiam = 25;
 boxCircle = false;
 funnelCircle = false;
 
-pipeDiameter = 25;
+pipeDiameter = 50;
 pipeWall = 3;
-pipeLen = 100;
+pipeLen = 25 + pipeWall * 2;
 
 pipeTrans = 
 [
@@ -56,14 +56,37 @@ difference()
 	}
 }
 
-screwHeight=100;
-screwTurns=6;
-screwDiam=pipeDiameter;
-screwThick=5;
-screwCenter=4;
+paddleCenter = 10;
+paddleWidth = 5;
+paddleRadius = 5;
+paddleCount = 7;
 
-translate(pipeTrans) rotate([90]) 
-translate([0, 0, -pipeLen / 2]) union()
+module paddleWheel(lenght, diama, core, thick, count)
 {
-	auger(screwHeight, screwDiam, screwCenter, screwTurns, screwThick);
+	padRad = thick;
+	
+	cylinder(lenght, core, core, center=true);
+	
+	for(i = [0 : count])
+	{
+		rotate([0,0,360/count*i]) union()
+		{
+			linear_extrude(lenght, center=true) 
+			{
+				intersection()
+				{
+					translate([diama/2 - padRad/2, 0])		 	circle(padRad/2);
+				
+					translate([0, -thick/2]) square([diama/2, thick]);
+				}
+				
+				translate([0, -thick/2]) square([diama/2 - padRad/2, thick]);
+			}
+		}
+	}
+}
+
+translate(pipeTrans) rotate([90, $t*360, 0])
+{
+	paddleWheel(pipeLen, pipeDiameter, paddleCenter, paddleWidth, paddleCount);
 }
