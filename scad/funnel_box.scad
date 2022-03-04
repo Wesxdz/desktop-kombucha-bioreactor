@@ -2,7 +2,7 @@ height=100;
 diameter=200;
 hole=25;
 wall=3;
-tunnelHeight=20;
+tunnelHeight=200;
 containerCircle=false;
 tunnelCircle=false;
 
@@ -22,7 +22,7 @@ module funnelBox_impl(height, diameter,
 		}
 	}
 	
-	translate([0,0,-tunnelHeight])linear_extrude(height) 
+	translate([0,0,-tunnelHeight])linear_extrude(tunnelHeight + 1) 
 	{	
 		if(tunnelCircle)
 		{
@@ -35,15 +35,15 @@ module funnelBox_impl(height, diameter,
 	}
 }
 
-module funnelBoxInside(height=100, diameter=200, 
-					   hole=25, wall=3, tunnelHeight=20,
+module funnelBoxInside(height, diameter, 
+					   hole, wall, tunnelHeight,
 					   containerCircle=false, tunnelCircle=false)
 {			   
 	funnelBox_impl(height+0.01, diameter, hole, tunnelHeight+0.01, containerCircle, tunnelCircle);
 }
 
-module funnelBoxOutside(height=100, diameter=200, 
-					   hole=25, wall=3, tunnelHeight=20,
+module funnelBoxOutside(height, diameter, 
+					   hole, wall, tunnelHeight,
 					   containerCircle=false, tunnelCircle=false)
 {			   
 	holeWall = hole + wall*2;
@@ -52,7 +52,7 @@ module funnelBoxOutside(height=100, diameter=200,
 	funnelBox_impl(height, diameterWall, holeWall, tunnelHeight, containerCircle, tunnelCircle);
 }
 
-module funnelBox(height=100, diameter=200, hole=25, wall=3, tunnelHeight=20,
+module funnelBox(height, diameter, hole, wall, tunnelHeight,
 				 containerCircle=false, tunnelCircle=false)
 {
 	difference()

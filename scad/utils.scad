@@ -5,7 +5,7 @@ module pipeOutside(diameter, wall, length)
 
 module pipeInside(diameter, wall, length)
 {
-	cylinder(length+1, d=diameter, center=true);
+	cylinder(length+0.01, d=diameter, center=true);
 }
 
 module pipe(diameter, wall, length)
