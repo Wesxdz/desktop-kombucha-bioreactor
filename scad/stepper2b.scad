@@ -1,8 +1,10 @@
-$fa = 1;
-$fs = 0.4;
-$fn = 200;
+//$fa = 1;
+//$fs = 0.4;
+//$fn = 200;
 
 function stepper2b_pinOffset() = [0, 8, 0];
+
+function stepper2b_pinDiam() = 5;
 
 module stepper2b_pin()
 {
@@ -14,14 +16,14 @@ module stepper2b_pin()
 		intersection()
 		{
 			linear_extrude(10)
-			circle(d=5);
+			circle(d=stepper2b_pinDiam());
 			
 			translate([0, 0, 10-6+6/2])  cube([10, 3, 6], center=true);
 		}
 	}
 }
 
-module stepper2b_mountingPlate()
+module stepper2b_mountingPlate(holes=true)
 {
 	difference()
 	{
@@ -36,7 +38,10 @@ module stepper2b_mountingPlate()
 			}
 		}
 		
-		stepper2b_mountingHole();
+		if(holes)
+		{
+			stepper2b_mountingHole();
+		}
 	}
 }
 
