@@ -1,6 +1,7 @@
 // To play activate animations in View->Animate
 // Time=0, FPS=1000000, Steps=1000000
 // Drag the view to move (right-click + drag), don't rotate the view
+// Use othographic mode and hide the grid
 // Use the "Reset View" button to reset the game
 
 $vpr_i = $vpr;
