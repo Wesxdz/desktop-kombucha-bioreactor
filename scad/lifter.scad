@@ -11,6 +11,22 @@ filterD=70;
 filterBottomD=filterD*0.7;
 filterH=80;
 
+beakerH=146;
+beakerD=100.1;
+beakerR=beakerD/2;
+beakerW=2.5;
+
+module beaker()
+{
+    difference()
+    {
+        cylinder(r=beakerR+beakerW,h=beakerH);
+        
+        translate([0,0,beakerW])
+        cylinder(r=beakerR,h=beakerH-beakerW+0.01);
+    }
+}
+
 module filterPlate()
 {
 	linear_extrude(plateT)
@@ -63,8 +79,12 @@ module grabber()
 	}
 }
 
-//crossSection(90)
+crossSection(90)
 {
-	filter();
-	grabber();
+    translate([0,0,beakerH+4])
+    {
+        filter();
+        grabber();
+    }
+    beaker();
 }
