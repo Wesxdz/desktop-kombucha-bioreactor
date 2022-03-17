@@ -47,3 +47,4 @@ I assume that kombucha can be created using the device that tastes equivalant or
 
 ### drawing upon this scoring, describe which governance option, or combination of options, you would prioritize, and why. Outline any trade-offs you considered as well as assumptions and uncertainties
 
+1 Scoring: Nope
