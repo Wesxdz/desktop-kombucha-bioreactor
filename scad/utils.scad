@@ -27,3 +27,9 @@ module crossSection(angle=0)
 		linear_extrude(1000, center=true) square(1000, center=true);
 	}
 }
+
+module mirrorAdd(axis)
+{
+	children();
+	mirror(axis) children();
+}

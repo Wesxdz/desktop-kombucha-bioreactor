@@ -85,35 +85,50 @@ module augerDispenser()
 				pipeOutside(pipeDiameter, pipeWall, pipeLen);
 			}
 
-			translate([0,1.5])
+            //Screw plate
+			translate([0,pipeWall])
 			stepperTransform()
-			scale([1,1,-1.5])
-			difference()
-			{
-				scale([1.025, 1.1, 1])
-				union()
-				{
-					stepper2b_mountingPlate(holes=false);
-				}
-				
-				translate([0,0])
-				for(i=[-1, 1])
-				{
-					translate([35/2*i,0, -1.015]) cylinder(d=6.5+$to,h=0.5, $fn=6);
-					translate([35/2*i,0, -0.52]) cylinder(d=4, h=0.6);
-				}
-			}
+            {
+                plateOffset = 6.5;
+                plateL = pipeDiameter+pipeWall*2+plateOffset*2;
+                
+                cube([plateL,10,pipeWall],true);
+                
+                mirrorAdd([1,0])
+                translate([plateL/2-6.5,-10/2])
+                rotate([180,0,0])
+                linear_extrude(pipeWall,center=true)
+                polygon([[6.5, 0], [0,0], [0, 2.5]]);
+                
+                // Support Triangles
+                /*
+                mirrorAdd([1,0,0]) mirrorAdd([0,1,0])
+                {
+                    translate([0,10/2-pipeWall/4,-1])
+                    rotate([90,90,0])
+                    linear_extrude(pipeWall/2,center=true)
+                    polygon([[plateL/2, 0], [0,0], [0, plateL/2]]);
+                }
+                */
+            }
 			
 			pipeTransform()
 			translate([0, 0, pipeLen / 2])
 			cylinder(h=pipeWall, d=pipeDiameter+pipeWall*2);
+            
+			pipeTransform()
+            for(i = [-1,1])
+			translate([0, pipeDiameter/2+pipeWall-pipeDiameter/4-pipeWall/2, pipeLen/2 * i + pipeWall/2])
+            {
+                cube([pipeDiameter+pipeWall*2,pipeDiameter/2+pipeWall,pipeWall],true);
+            }
 		}
 		
         union()
         {
             translate([0,0,-pipeDiameter/2])
             cylinder(r=coneHoleDiam/2, h=adapterHeight);
-            translate([0,0,heightAbovePipe-insertSlotHeight])
+            translate([0,0,heightAbovePipe-insertSlotHeight+0.01])
             cylinder(r=coneHoleDiam/2+.75, h=insertSlotHeight);
         }
         
@@ -137,7 +152,16 @@ module augerDispenser()
 		pipeTransform()
 		translate([0, coneHoleDiam/2, pipeLen/2-coneHoleDiam/2])
 		cube(coneHoleDiam, center=true);
-	}
+
+        //Screw plate
+        translate([0,pipeWall])
+        stepperTransform()
+        for(i=[-1, 1])
+        {
+            translate([35/2*i,0,+0.01]) cylinder(d=6.5+$to,h=pipeWall/2, $fn=6);
+            translate([35/2*i,0,-pipeWall/2-0.01]) cylinder(d=4, h=pipeWall);
+        }
+    }
 
 	module screw()
 	{
@@ -204,4 +228,7 @@ module augerDispenser()
 	//stepper2b();
 }
 
-augerDispenser();
+//crossSection()
+{
+    augerDispenser();
+}
