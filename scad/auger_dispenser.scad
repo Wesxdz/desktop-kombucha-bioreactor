@@ -1,5 +1,5 @@
-//$fa = 1;
-//$fs = 0.4;
+$fa = 1;
+$fs = 0.5;
 $fn = 40;
 
 $to = 0.3;
@@ -13,8 +13,8 @@ coneHeight = 75;
 coneDiameter = 150;
 coneHoleDiam = 25;
 
-boxCircle = false;
-funnelCircle = false;
+boxCircle = true;
+funnelCircle = true;
 
 pipeDiameter = 25;
 pipeWall = 3;
@@ -55,13 +55,24 @@ screwThick=5;
 screwCenter=4;
 screwTerm=pipeWall;
 
-module sugarDispenser()
+heightAbovePipe = 5;
+adapterHeight = heightAbovePipe+pipeDiameter/2;
+insertSlotHeight = 6.5;
+
+module augerDispenser()
 {
 	difference()
 	{
 		union()
 		{
-			funnelBoxOutside(coneHeight,
+            translate([0,0,-pipeDiameter/2])
+            cylinder(r=coneHoleDiam/2 + 1.5, h=adapterHeight);
+            
+            outside = coneHoleDiam+pipeWall;
+            *translate([0,-outside/4-pipeWall/2,-adapterHeight/2 + heightAbovePipe])
+            cube([outside/4,outside/2,adapterHeight], center=true);
+            
+			*funnelBoxOutside(coneHeight,
 			coneDiameter,
 			coneHoleDiam,
 			pipeWall,
@@ -98,13 +109,21 @@ module sugarDispenser()
 			cylinder(h=pipeWall, d=pipeDiameter+pipeWall*2);
 		}
 		
-		funnelBoxInside(coneHeight,
-			coneDiameter,
-			coneHoleDiam,
-			pipeWall,
-			coneHoleDiam/2+pipeWall,
-			boxCircle,
-			funnelCircle);
+        union()
+        {
+            translate([0,0,-pipeDiameter/2])
+            cylinder(r=coneHoleDiam/2, h=adapterHeight);
+            translate([0,0,heightAbovePipe-insertSlotHeight])
+            cylinder(r=coneHoleDiam/2+.75, h=insertSlotHeight);
+        }
+        
+		*funnelBoxInside(coneHeight,
+		coneDiameter,
+		coneHoleDiam,
+		pipeWall,
+		coneHoleDiam/2+pipeWall,
+		boxCircle,
+		funnelCircle);
 		
 		pipeTransform()
 		{
@@ -146,8 +165,8 @@ module sugarDispenser()
 		cylinder(h=pipeWall*1.5, r=screwCenter);
 	}
 	
-	translate([0,$to])
-	screw();
+	//translate([0,$to])
+	//screw();
 	
 	module pipeCap()
 	{
@@ -175,17 +194,14 @@ module sugarDispenser()
 	
 	}
 	
-	translate([0,-$to/2,0]) 
-	pipeCap();
+	//translate([0,-$to/2,0]) 
+	//pipeCap();
 
 	/*
 	*/
-	stepperTransform()  
-	translate([0,0,-$to])
-	stepper2b();
+	//stepperTransform()  
+	//translate([0,0,-$to])
+	//stepper2b();
 }
 
-//crossSection()
-{
-	sugarDispenser();
-}
+augerDispenser();
