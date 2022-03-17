@@ -48,7 +48,7 @@ module stepperTransform()
 	children();
 }
 
-screwHeight=100;
+screwHeight=pipeLen;
 screwTurns=6;
 screwDiam=pipeDiameter-$to*2;
 screwThick=5;
@@ -185,7 +185,7 @@ module sugarDispenser()
 	stepper2b();
 }
 
-//crossSection()
+crossSection()
 {
 	sugarDispenser();
 }
