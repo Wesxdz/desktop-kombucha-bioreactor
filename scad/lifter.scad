@@ -20,11 +20,17 @@ beakerH=146;
 beakerD=100.1;
 beakerR=beakerD/2;
 beakerW=2.5;
+beakerPos = [0, 0, -beakerH - 4];
+beakerCOM = beakerPos;
 
 grabberDim = [(plateL-filterD)/2+$w, plateW+$w*2, $w*2+plateT];
-grabberPos = [plateL/2+$w-grabberDim[0]/2, 0];
+grabberPos = [plateL/2+$w-grabberDim[0]/2, 0, 0];
 
-leverDim = [grabberDim[2], 40, grabberDim[2]];
+pinPos = [plateL/2+$w, -plateW/2, 0];
+
+leverDim = [grabberDim[2], 120, grabberDim[2]];
+
+leverEndPos = [grabberPos[0]-grabberDim[0]/2, -grabberDim[1]/2-leverDim[1], 0];
 
 module beaker()
 {
@@ -72,7 +78,7 @@ module grabber()
 {    
     module pin()
     {
-        translate([plateL/2+$w, -plateW/2])
+        translate(pinPos)
         rotate([0,90])
         cylinder(d=$w,h=$w+$tol);
     }
@@ -86,8 +92,22 @@ module grabber()
     
     module lever()
     {
+        bottom = abs(pinPos.x - grabberPos.x);
+        ratio = abs(leverEndPos.x - pinPos.x) / bottom;
+        
+        height = abs(pinPos.z - beakerCOM.z);
+        
+        height2 = height * ratio;
+        
         translate([grabberPos[0]-grabberDim[0]/2+leverDim[0]/2, -grabberDim[1]/2-leverDim[1]/2])
         cube(leverDim, center=true);
+        
+        translate([leverDim.x, 0, leverDim.z]/2)
+        translate(leverEndPos)
+        rotate([0, -90, 0])
+        translate(-leverEndPos)
+        linear_extrude(leverDim.z, center=true)
+        polygon([[leverEndPos.x, leverEndPos.y], [leverEndPos.x, pinPos.y], [height2, leverEndPos.y]]);
     }
 
 	mirrorAdd([1,0,0])
@@ -148,16 +168,19 @@ module leverHook()
 }
 
 
-translate([0,20,0])
-grabber();
+//translate([0,20,0])
+//grabber();
 
 //crossSection(90)
+
 {
-    translate([0,0,beakerH+4])
+    rotate([160, 0])
     {
         filter();
         grabber();
         leverHook();
     }
+    translate(beakerPos)
     beaker();
+    
 }
