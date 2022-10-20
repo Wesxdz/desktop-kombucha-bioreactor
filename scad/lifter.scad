@@ -15,22 +15,156 @@ plateD=70;
 filterD=57.5;
 filterBottomD=53.3;
 filterH=63.5;
+filterCOM = [0, 0, -filterH];
 
 beakerH=146;
 beakerD=100.1;
 beakerR=beakerD/2;
 beakerW=2.5;
 beakerPos = [0, 0, -beakerH - 4];
-beakerCOM = beakerPos;
 
 grabberDim = [(plateL-filterD)/2+$w, plateW+$w*2, $w*2+plateT];
 grabberPos = [plateL/2+$w-grabberDim[0]/2, 0, 0];
 
-pinPos = [plateL/2+$w, -plateW/2, 0];
+leverDim = [grabberDim[2], 50, grabberDim[2]];
 
-leverDim = [grabberDim[2], 120, grabberDim[2]];
+pinPos = [plateL/2+$w, -plateW/2-30, 0];
+hookYPos = pinPos.y - 45;
+hookStartPos = [grabberPos[0]-grabberDim[0]/2+leverDim.x/2, hookYPos, 150];
+hookEndPos = [grabberPos[0]-grabberDim[0]/2+leverDim.x/2, hookYPos, -40];
+hookDiameter = 10;
 
-leverEndPos = [grabberPos[0]-grabberDim[0]/2, -grabberDim[1]/2-leverDim[1], 0];
+armStartPos = [grabberPos[0]-grabberDim[0]/2+leverDim.x/2, pinPos.y + 40, 0];
+armEndPos = [grabberPos[0]-grabberDim[0]/2+leverDim.x/2, -grabberDim[1]/2-leverDim.y, 0];
+
+tipOverAngle = angle(filterCOM - [0, pinPos.y, pinPos.z], [0,0,1]);
+targetTipAngle = tipOverAngle + 12.5;
+
+leverStartPos = armStartPos;
+
+function yIntercept(p1, p2, xPos) =
+    let(v = p2-p1)
+    let(m = v.y/v.x)
+    let(b=p1.y-m*p1.x)
+    [xPos, xPos * m + b];
+
+function computeLeverMid() =
+    let(relativeHookEnd = rotate([-targetTipAngle,0,0]) * (hookEndPos - pinPos) + pinPos)
+    let(t = circleTangentPoints(YZtoXY(relativeHookEnd), hookDiameter/2 + leverDim.x/2, 
+                                YZtoXY(armStartPos))[0])
+                                
+    let(tempMid = [armStartPos.x, t.x, t.y])
+    
+    let(leverNorm = normalize(tempMid - leverStartPos))
+    let(leverLength = norm(tempMid - leverStartPos) + 20)
+    leverStartPos + leverNorm * leverLength;
+    
+leverMidPos = computeLeverMid();
+    
+function computeLeverEnd() =
+    let(relativeHookEnd = rotate([-targetTipAngle,0,0]) * (hookEndPos - pinPos) + pinPos)
+    let(t = circleTangentPoints(YZtoXY(relativeHookEnd), hookDiameter/2 + leverDim.x/2, 
+                                YZtoXY(armStartPos))[0])
+                                
+    let(hookTarget = XYtoYZ(yIntercept(YZtoXY(leverStartPos), YZtoXY(leverMidPos), hookYPos), leverStartPos.x))
+    
+    let(leverNorm = normalize(leverMidPos - leverStartPos))
+    let(leverLength = norm(hookTarget - leverStartPos) + hookDiameter)
+    
+    [leverMidPos.x, hookYPos - hookDiameter, leverMidPos.z + 20];
+ 
+leverEndPos = computeLeverEnd();
+
+function YZtoXY(v) = [v.y, v.z];
+function XYtoYZ(v, x=0) = [x, v.x, v.y]; 
+
+function rotationFromHookSegment(hookPos, start, end) =  
+    let(projectedPoint = closestPointOnSegment(YZtoXY(start), YZtoXY(end), YZtoXY(pinPos)))
+    let(dist = norm(projectedPoint - YZtoXY(pinPos)))
+    
+    let(segments = circleToCicleInteriorTangentSegments(
+                YZtoXY(pinPos), dist, 
+                YZtoXY(hookPos), hookDiameter/2 + leverDim.x/2
+            )
+       )
+       
+    let(hookPoint = XYtoYZ(segments[1][1], pinPos.x))
+    let(leverPoint = XYtoYZ(segments[1][0], pinPos.x))
+    
+    let(hookDist = norm(hookPoint - leverPoint))
+    let(leverLen = norm(XYtoYZ(projectedPoint, pinPos.x) - end))
+    
+    let(a = angle(pinPos - leverPoint, 
+          pinPos - XYtoYZ(projectedPoint, pinPos.x)))
+          
+    hookDist > leverLen ? 0 : a;
+
+function rotationFromHook(hookPos) =  
+    let(a1 = rotationFromHookSegment(hookPos, leverStartPos, leverMidPos))
+    let(a2 = rotationFromHookSegment(hookPos, leverMidPos, leverEndPos))
+    a1 != 0 ? a1 : a2;
+
+module rotationFromHook(hookPos)
+{
+    t2 = circleTangentPoints(YZtoXY(hookPos), hookDiameter/2 + leverDim.x/2, YZtoXY(leverStartPos))[0];
+    
+    p = YZtoXY(hookPos);
+    
+    *translate(XYtoYZ(p, leverStartPos.x))
+    color("black")
+    sphere(4);
+    
+    *translate(leverMidPos)
+    color("red")
+    sphere(4);
+    
+    echo(rotationFromHook(hookPos));
+    
+    radius = norm(p - YZtoXY(pinPos));
+    
+    projectedPoint = closestPointOnSegment(YZtoXY(leverStartPos), YZtoXY(leverMidPos), YZtoXY(pinPos));
+    
+    dist = norm(projectedPoint - YZtoXY(pinPos));
+    
+    segments = circleToCicleInteriorTangentSegments(YZtoXY(pinPos), dist, 
+                                         YZtoXY(hookPos), hookDiameter/2);
+
+    *%translate(pinPos)
+    color("purple", 0.1)
+    sphere(dist);      
+    
+    *%translate(hookPos)
+    color("purple", 0.1)
+    sphere(hookDiameter/2);  
+    
+    *for(x=[0,1])
+    for(y=[0,1])
+    translate(XYtoYZ(segments[x][y], leverStartPos.x + 10))
+    color("black")
+    sphere(1);     
+    
+    translate(XYtoYZ(segments[1][1], leverStartPos.x + 10))
+    color("black")
+    sphere(2);  
+    
+    *translate(XYtoYZ(projectedPoint, leverStartPos.x + 10))
+    color("black")
+    sphere(1);
+    
+    a = angle(pinPos - XYtoYZ(segments[1][0], pinPos.x), 
+              pinPos - XYtoYZ(projectedPoint, pinPos.x));
+
+    
+    echo(radius, dist);
+    
+    w = sqrt(radius*radius - dist*dist);
+    
+    finalP = projectedPoint + normalize(YZtoXY(leverMidPos) - YZtoXY(leverStartPos)) * w;
+    
+    *translate(XYtoYZ(finalP, leverStartPos.x))
+    color("white")
+    sphere(4);
+}
 
 module beaker()
 {
@@ -92,22 +226,40 @@ module grabber()
     
     module lever()
     {
-        bottom = abs(pinPos.x - grabberPos.x);
-        ratio = abs(leverEndPos.x - pinPos.x) / bottom;
+        leverThickness = leverDim.z;
+        armStart = armStartPos.y;
         
-        height = abs(pinPos.z - beakerCOM.z);
+        //fullHeight = 84;
         
-        height2 = height * ratio;
-        
+        /*
         translate([grabberPos[0]-grabberDim[0]/2+leverDim[0]/2, -grabberDim[1]/2-leverDim[1]/2])
-        cube(leverDim, center=true);
+        cube([leverDim.x, abs(armStart, , leverDim.z], center=true);
+        */
         
-        translate([leverDim.x, 0, leverDim.z]/2)
-        translate(leverEndPos)
-        rotate([0, -90, 0])
-        translate(-leverEndPos)
-        linear_extrude(leverDim.z, center=true)
-        polygon([[leverEndPos.x, leverEndPos.y], [leverEndPos.x, pinPos.y], [height2, leverEndPos.y]]);
+        //end = [armEndPos.x, armEndPos.y, height2];
+        
+        *color("green")
+        translate(end)
+        sphere(5);
+        
+        color("blue")
+        translate(armStartPos)
+        sphere(5);
+        
+        color("green")
+        translate(filterCOM)
+        sphere(5);
+        
+        translate(armStartPos)
+        rotate([angle([0,0,1], leverMidPos-armStartPos),0,0])
+        translate([0,0,norm(leverMidPos-armStartPos)/2])
+        cube([leverThickness, leverThickness, norm(leverMidPos-armStartPos)], center=true);
+        
+        translate(leverMidPos)
+        //color("blue")
+        rotate([angle([0,0,1], leverEndPos-leverMidPos),0,0])
+        translate([0,0,norm(leverEndPos-leverMidPos)/2])
+        cube([leverThickness, leverThickness, norm(leverEndPos-leverMidPos)], center=true);
     }
 
 	mirrorAdd([1,0,0])
@@ -124,7 +276,7 @@ module grabber()
             }
         }
         
-        pin();
+        #pin();
         stopper();
         lever();
     }
@@ -151,19 +303,20 @@ module grabber()
     }
 }
 
+progress = $t;
+
 module leverHook()
 {
 	mirrorAdd([1,0,0])
-    {
-        dim = [grabberDim[2], $w*2, grabberDim[2]];
-        
-        translate([0,0,filterH+10])
-        translate([grabberPos[0]-grabberDim[0]/2+dim[0]/2, -grabberDim[1]/2+dim[1]/2-leverDim[1]])
-        cube(dim, center=true);
-        
+    {        
+        translate(hookStartPos)
+        rotate([0, 90])
+        cylinder(d=hookDiameter, h=leverDim.x, center=true);
+        /*
         translate([0,0,filterH+30])
         translate([grabberPos[0]-grabberDim[0]/2+dim[0]/2, -grabberDim[1]/2-dim[1]/2])
         cube(dim, center=true);
+        */
     }
 }
 
@@ -174,13 +327,22 @@ module leverHook()
 //crossSection(90)
 
 {
-    rotate([160, 0])
+    hookPos = hookStartPos + progress*(hookEndPos-hookStartPos);
+    
+    rotationFromHook(hookPos);
+    
+    translate(pinPos)
+    rotate([rotationFromHook(hookPos), 0])
+    translate(-pinPos)
     {
         filter();
         grabber();
-        leverHook();
     }
+    
+    translate(hookPos - hookStartPos)
+    leverHook();
+    
     translate(beakerPos)
-    beaker();
+    *beaker();
     
 }
