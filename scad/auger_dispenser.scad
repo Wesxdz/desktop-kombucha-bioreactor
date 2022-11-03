@@ -59,6 +59,18 @@ heightAbovePipe = 5;
 adapterHeight = heightAbovePipe+pipeDiameter/2;
 insertSlotHeight = 6.5;
 
+module outputSupportInner()
+{
+    translate([0,0,pipeLen-coneHoleDiam-pipeWall])
+    cube([pipeDiameter,15,pipeWall],true);   
+};
+
+module outputSupportSide()
+{
+    translate([coneHoleDiam/2,0,pipeLen-coneHoleDiam/2-pipeWall])
+    cube([pipeWall*2,15,coneHoleDiam+pipeWall],true);
+};
+
 module augerDispenser()
 {
 	difference()
@@ -92,13 +104,15 @@ module augerDispenser()
                 plateOffset = 6.5;
                 plateL = pipeDiameter+pipeWall*2+plateOffset*2;
                 
-                cube([plateL,10,pipeWall],true);
+                cube([plateL,15,pipeWall],true);
+                    
+                // Print support
+                outputSupportInner();
                 
-                mirrorAdd([1,0])
-                translate([plateL/2-6.5,-10/2])
-                rotate([180,0,0])
-                linear_extrude(pipeWall,center=true)
-                polygon([[6.5, 0], [0,0], [0, 2.5]]);
+                outputSupportSide();
+                
+                mirror([1,0,0]) outputSupportSide();
+               
                 
                 // Support Triangles
                 /*
@@ -144,11 +158,13 @@ module augerDispenser()
 		{
 			pipeInside(pipeDiameter, pipeWall, pipeLen);
 		}
-			
+        
+        // Auger end insert
 		pipeTransform()
 		translate([0, 0, pipeLen/2-pipeWall/2+$to])
 		cylinder(h=pipeWall, r=screwCenter+$to*2);
-			
+	
+        // Dispenser output interface
 		pipeTransform()
 		translate([0, coneHoleDiam/2, pipeLen/2-coneHoleDiam/2])
 		cube(coneHoleDiam, center=true);
