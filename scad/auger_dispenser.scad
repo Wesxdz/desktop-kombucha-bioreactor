@@ -48,37 +48,31 @@ module stepperTransform()
 	children();
 }
 
-screwHeight=100;
-screwTurns=6;
-screwDiam=pipeDiameter-$to*2;
-screwThick=5;
-screwCenter=4;
+screwHeight=pipeLen;
+screwTurns=5.5;
+screwStopDiam=pipeDiameter-$to*2;
+screwDiam=screwStopDiam+$to;
+screwThick=3;
+screwCenter=3;
 screwTerm=pipeWall;
+screwClearLen=coneHoleDiam/2;
+screwEndDiam=8;
+screwHelixCount=1;
 
 heightAbovePipe = 5;
 adapterHeight = heightAbovePipe+pipeDiameter/2;
 insertSlotHeight = 6.5;
 
-module outputSupportInner()
-{
-    translate([0,0,pipeLen-coneHoleDiam-pipeWall])
-    cube([pipeDiameter,15,pipeWall],true);   
-};
-
-module outputSupportSide()
-{
-    translate([coneHoleDiam/2,0,pipeLen-coneHoleDiam/2-pipeWall])
-    cube([pipeWall*2,15,coneHoleDiam+pipeWall],true);
-};
+topMargin = 10;
 
 module augerDispenser()
 {
-	difference()
+	*difference()
 	{
 		union()
 		{
             translate([0,0,-pipeDiameter/2])
-            cylinder(r=coneHoleDiam/2 + 1.5, h=adapterHeight);
+            cylinder(r=coneHoleDiam/2 + 1.5, h=adapterHeight+topMargin);
             
             outside = coneHoleDiam+pipeWall;
             *translate([0,-outside/4-pipeWall/2,-adapterHeight/2 + heightAbovePipe])
@@ -92,9 +86,23 @@ module augerDispenser()
 			boxCircle,
 			funnelCircle);
 			
+            
 			pipeTransform()
 			{
 				pipeOutside(pipeDiameter, pipeWall, pipeLen);
+			}
+			
+            offsetPipeLength = pipeLen - coneHoleDiam/2;
+            translate([0,coneHoleDiam/4 + pipeWall,topMargin])
+			pipeTransform()
+			{
+				pipeOutside(pipeDiameter, pipeWall, offsetPipeLength);
+			}
+            
+            translate([0,coneHoleDiam/4 + pipeWall,topMargin / 2])
+			pipeTransform()
+			{
+                cube([pipeDiameter + pipeWall * 2, topMargin, offsetPipeLength], true);
 			}
 
             //Screw plate
@@ -126,10 +134,12 @@ module augerDispenser()
                 */
             }
 			
+            // End cap
 			pipeTransform()
 			translate([0, 0, pipeLen / 2])
 			cylinder(h=pipeWall, d=pipeDiameter+pipeWall*2);
             
+            // Bottom supports
 			pipeTransform()
             for(i = [-1,1])
 			translate([0, pipeDiameter/2+pipeWall-pipeDiameter/4-pipeWall/2, pipeLen/2 * i + pipeWall/2])
@@ -140,9 +150,9 @@ module augerDispenser()
 		
         union()
         {
-            translate([0,0,-pipeDiameter/2])
-            cylinder(r=coneHoleDiam/2, h=adapterHeight);
-            translate([0,0,heightAbovePipe-insertSlotHeight+0.01])
+            translate([0,0,-pipeDiameter/2-pipeWall])
+            cylinder(r=coneHoleDiam/2, h=adapterHeight+topMargin+pipeWall);
+            translate([0,0,heightAbovePipe-insertSlotHeight+topMargin+0.01])
             cylinder(r=coneHoleDiam/2+.75, h=insertSlotHeight);
         }
         
@@ -158,13 +168,25 @@ module augerDispenser()
 		{
 			pipeInside(pipeDiameter, pipeWall, pipeLen);
 		}
+			
+        offsetPipeLength = pipeLen - coneHoleDiam/2;
+        translate([0,coneHoleDiam/4+pipeWall/2,topMargin])
+        pipeTransform()
+        {
+            pipeInside(pipeDiameter, pipeWall, offsetPipeLength - pipeWall);
+        }
         
-        // Auger end insert
+        translate([0,coneHoleDiam/4+pipeWall/2,topMargin/2])
+        pipeTransform()
+        {
+            cube([pipeDiameter, topMargin, offsetPipeLength - pipeWall], true);
+        }
+		
+        // End cap hole
 		pipeTransform()
 		translate([0, 0, pipeLen/2-pipeWall/2+$to])
-		cylinder(h=pipeWall, r=screwCenter+$to*2);
-	
-        // Dispenser output interface
+		cylinder(h=pipeWall, r=screwEndDiam/2+$to*2);
+			
 		pipeTransform()
 		translate([0, coneHoleDiam/2, pipeLen/2-coneHoleDiam/2])
 		cube(coneHoleDiam, center=true);
@@ -181,16 +203,54 @@ module augerDispenser()
 
 	module screw()
 	{
+        realScrewLen = screwHeight-screwTerm-$to-screwClearLen;
+                
 		pipeTransform()
 		translate([0, 0, -pipeLen / 2])
 		difference()
 		{
+            rotate([0,0,$t*360])
 			union()
 			{
-				translate([$to,0])
-				auger(screwHeight-pipeWall, screwDiam, screwCenter, screwTurns, screwThick);
-				
-				linear_extrude(screwTerm) circle(d=screwDiam);
+                for(i = [0:screwHelixCount])
+                {
+                    rotate([0,0,360/screwHelixCount*i])
+                    translate([0, 0, screwTerm])
+                    {
+                        auger(realScrewLen, screwDiam, screwCenter, screwTurns, screwThick);
+                        
+                        // start fill
+                        difference()
+                        {
+                            startFill = 6;
+                            ratio = startFill / realScrewLen;
+                            
+                            slices = realScrewLen*5 * ratio;
+                            for(i = [0:slices])
+                            {
+                                rotate([0,0,i/slices*screwTurns*ratio*-360])
+                                translate([0,0,i/slices*startFill-startFill])
+                                linear_extrude(height=startFill, convexity=4) union()
+                                {	
+                                    rectSize = screwStopDiam/2 - screwThick/2;
+                                    translate([rectSize / 2, 0]) square([rectSize, screwThick], true);
+                                    translate([rectSize, 0, 0]) circle(r=screwThick/2);
+                                }
+                            }
+                            
+                            translate([0, 0, -startFill*2])
+                            linear_extrude(startFill*2) circle(d=screwStopDiam+0.1);
+                        }
+                    }
+                }
+                
+				linear_extrude(screwTerm) circle(d=screwStopDiam);
+			
+                centerHolderDiam = stepper2b_pinDiam() + 3;
+                centerHolderLen = 8;
+                
+                linear_extrude(centerHolderLen) circle(d=centerHolderDiam);
+                translate([0,0,centerHolderLen]) sphere(centerHolderDiam / 2);
 			}
 			
 			minkowski()
@@ -199,14 +259,31 @@ module augerDispenser()
 				cube($to, center=true);
 			}
 		}
-		
+                
 		pipeTransform()
-		translate([0, 0, pipeLen / 2 - pipeWall - $to])
-		cylinder(h=pipeWall*1.5, r=screwCenter);
+        {
+        }
+		
+        // end extension
+		pipeTransform()
+		translate([0, 0, -pipeLen / 2 + screwTerm + realScrewLen])
+		cylinder(h=pipeLen+pipeWall/2-realScrewLen-pipeWall-$to, r=screwCenter,center=false);
+        
+        //end ball
+		difference()
+		{
+            pipeTransform()
+            translate([0, 0, pipeLen/2+screwTerm-pipeWall/2-$to])
+            sphere(d=screwEndDiam);
+            
+            pipeTransform()
+            translate([0, 0, pipeLen/2+screwTerm-pipeWall/2-$to+screwEndDiam/2])
+            cube([screwEndDiam,screwEndDiam,screwEndDiam],center=true);
+        }
 	}
 	
-	//translate([0,$to])
-	//screw();
+	translate([0,$to])
+	screw();
 	
 	module pipeCap()
 	{
@@ -234,14 +311,13 @@ module augerDispenser()
 	
 	}
 	
-	//translate([0,-$to/2,0]) 
-	//pipeCap();
+	*translate([0,-$to/2,0]) 
+	pipeCap();
 
-	/*
-	*/
-	//stepperTransform()  
-	//translate([0,0,-$to])
-	//stepper2b();
+
+	*stepperTransform()  
+	translate([0,0,-$to])
+	stepper2b();
 }
 
 //crossSection()
